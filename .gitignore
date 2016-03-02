@@ -1,9 +1,11 @@
-*.stl
+#*.stl
 *.deps
 *.tab
 *.gcode
 *.gif
 *.png
 *.jpg
+.*.swp
 *~
 builda3dprinter.eu
+stl/*.stl

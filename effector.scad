@@ -35,7 +35,7 @@ module effector() {
     }
     translate([0, 0, push_fit_height-height/2])
       cylinder(r=hotend_radius, h=height, $fn=36);
-    translate([0, 0, -6]) # import("m5_internal.stl");
+    translate([0, 0, -6]) # import("stl/m5_internal.stl");
     for (a = [0:60:359]) rotate([0, 0, a]) {
       translate([0, mount_radius, 0])
 	cylinder(r=m3_wide_radius, h=2*height, center=true, $fn=12);

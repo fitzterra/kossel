@@ -4,7 +4,7 @@ scale([-1, 1, 1]) difference() {
     cylinder(r=10, h=0.2, $fn=24);
   }
   difference() {
-    translate([1, -4, 0]) scale([0.2, 0.2, 1]) import("logotype.stl");
+    translate([1, -4, 0]) scale([0.2, 0.2, 1]) import("stl/logotype.stl");
     # translate([-17.2, 0, 0]) cube([1, 20, 20], center=true);
   }
 }
