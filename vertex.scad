@@ -32,12 +32,14 @@ module vertex(height, idler_offset, idler_space) {
     translate([37.5, 52.2, -height/2]) cylinder(r=8, h=0.5);
     difference() {
       union() {
+        // Outer wedge form
         intersection() {
           translate([0, 22, 0])
             cylinder(r=36, h=height, center=true, $fn=60);
           translate([0, -37, 0]) rotate([0, 0, 30])
             cylinder(r=50, h=height+1, center=true, $fn=6);
         }
+        // Inner triangle form
         translate([0, 38, 0]) intersection() {
           rotate([0, 0, -90])
             cylinder(r=55, h=height, center=true, $fn=3);
@@ -47,6 +49,7 @@ module vertex(height, idler_offset, idler_space) {
             cylinder(r=55, h=height+1, center=true, $fn=6);
         }
       }
+      // Internal cutout where motor shaft/idler bearings sits.
       difference() {
         translate([0, 58, 0]) minkowski() {
           intersection() {
@@ -63,6 +66,7 @@ module vertex(height, idler_offset, idler_space) {
         translate([0, 26+idler_offset+30, 0]) rotate([90, 0, 0])
           cylinder(r1=30, r2=2, h=30-idler_space/2);
       }
+      // Cutout between internal "arms"
       translate([0, 58, 0]) minkowski() {
         intersection() {
           rotate([0, 0, -90])
@@ -73,6 +77,7 @@ module vertex(height, idler_offset, idler_space) {
         cylinder(r=roundness, h=1, center=true);
       }
       extrusion_cutout(height+10, 2*extra_radius);
+      // All mounting and extrusion fitting holes
       for (z = [0:30:height]) {
         translate([0, -7.5-extra_radius, z+7.5-height/2]) rotate([90, 0, 0])
           screw_socket_cone();
@@ -84,11 +89,11 @@ module vertex(height, idler_offset, idler_space) {
               translate([a*7.5, y, 0]) rotate([0, a*90, 0]) screw_socket();
             }
             // Nut tunnels.
-	    for (z = [-1, 1]) {
-	      scale([1, 1, z]) translate([0, -100, 3]) minkowski() {
-	        rotate([0, 0, -a*30]) cylinder(r=4, h=16, $fn=6);
-		cube([0.1, 5, 0.1], center=true);
-	      }
+            for (z = [-1, 1]) {
+              scale([1, 1, z]) translate([0, -100, 3]) minkowski() {
+                rotate([0, 0, -a*30]) cylinder(r=4, h=16, $fn=6);
+                cube([0.1, 5, 0.1], center=true);
+              }
             }
           }
         }
