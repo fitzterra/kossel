@@ -1,5 +1,6 @@
 include <configuration.scad>;
 
+// Separation between the rod end mounbting edges.
 separation = 40;
 thickness = 6;
 
@@ -20,7 +21,7 @@ module carriage() {
     union() {
       // Main body.
       translate([0, 4, thickness/2])
-        cube([27, 40, thickness], center=true);
+        #cube([27, 40, thickness], center=true);
       // Ball joint mount horns.
       for (x = [-1, 1]) {
         scale([x, 1, 1]) intersection() {
