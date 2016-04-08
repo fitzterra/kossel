@@ -61,8 +61,17 @@ frame_offset = (frame_r * cos60) + frame_extrusion_w + explode;
 // tensioning.
 frame_top = frame_extrusion_h - 10 - frame_top_h + explode; 
 
-// Height of effector.
-effector_h = 8;
+// Effector selection
+//effectorOpt = "std";   // Standard Kossel J-Head effector
+effectorOpt = "e3d";   // The included E3D effector design
+// Efector height based on selected seffector
+effector_h = effectorOpt=="std" ? 8 : 10;
+// Distance between the rod mounting surfaces on the effector and carraiges
+separation = 20;
+// Horizontal distance from center to pivot from effector.scad/effector_e3d.scad
+effector_offset = effectorOpt=="std" ? 20 : 23;
+// Select the correct effector STL
+effectorSTL = effectorOpt=="std" ? "effector.stl" : "effector_e3d.stl";
 
 // The amount of space from the edge of the frame to front carriage mounting
 // face of the slider. This comes from the mgn12_truck_thickness value in
@@ -100,8 +109,6 @@ balljoint_d = 5.4;  // Diameter of balljoint
 
 
 // ~~~ Diagonal rods ~~~
-// Horizontal distance from center to pivot from effector.scad
-effector_offset = 20;
 DELTA_SMOOTH_ROD_OFFSET = frame_r;
 // The DELTA_RADIUS is the length from a rod pivot point on the effector, to
 // the pivot point on that rod on the carriage, but in a horizontal plane. In
@@ -182,7 +189,7 @@ module extrusion_15(len=240) {
  * pivot point at 0,0,0.
  **/
 module Rod() {
-    pivot_len = 17.2; // Length of one rod end from end to center pivot point
+    pivot_len = 17; // Length of one rod end from end to center pivot point
     rod_len = DELTA_DIAGONAL_ROD - 2 * pivot_len;
 
     // Bottom rod end
@@ -365,17 +372,20 @@ module towerPart(pos="l", part="slider", level="b") {
 module Spider() {
     // The effector turned upside down and positioned at the correct angle and
     // height to be centered in the XY plane and the bottom on 0 in the Z plane.
-    translate([0, 0, effector_h])
-        rotate([0,180,60])
+    // The E3D effector is already the right side up, and because it does not
+    // need to be flipped, is already at the correct height too.
+    translate([0, 0, effectorOpt=="std"?effector_h:0])
+        // Only flip the standard effector, not the E3D
+        rotate([0, effectorOpt=="std"?180:0, 60])
             color(frame_color)
-                import(STLPath("effector.stl"));
+                import(STLPath(effectorSTL));
     // Three sets of rods connected to the effector at 120° angles
     for(s=[0:2])
         rotate([0, 0, s*120])
             // Two rods on either side of the effector connector. The 1.5 extra
             // is half the witdh of the traxxas joint
-            for(x=[-effector_offset-balljoint_w/2, effector_offset+balljoint_w/2])
-                translate([x, 20, effector_h/2])
+            for(x=[-separation-balljoint_w/2, separation+balljoint_w/2])
+                translate([x, effector_offset, effector_h/2])
                     rotate([-(90-delta_rod_angle),0,0])
                         Rod();
 }
@@ -416,15 +426,15 @@ translate([0,0,plate_z+explode])color(plate_color)cylinder(h=plate_thickness,r=p
 }
 
 //translate([20,20,frame_motor_h + effector_h/2 + effector_z - explode])
-translate([20,20,effector_h/2 + effector_z - explode])
+translate([separation,effector_offset,effector_h/2 + effector_z - explode])
     rotate([0,-90,-90])
-        color("blue")
-            cylinder(h=DELTA_RADIUS, r=rod_r);
+        color("blue", 0.5)
+            cylinder(h=DELTA_RADIUS, r=rod_r/4);
 //translate([20,20+DELTA_RADIUS,frame_motor_h + effector_h/2 + effector_z - explode])
-translate([20,20+DELTA_RADIUS,effector_h/2 + effector_z - explode])
+translate([separation,effector_offset+DELTA_RADIUS,effector_h/2 + effector_z - explode])
     rotate([0,0,-90])
-        color("orange")
-            cylinder(h=delta_vert_l, r=rod_r);
+        color("orange", 0.5)
+            cylinder(h=delta_vert_l, r=rod_r/4);
 //Ramps mount
 //translate([-80,145,40])rotate([0,0,-120]) color(frame_color)import("mega2560_kutu_Kulak.stl");
 }

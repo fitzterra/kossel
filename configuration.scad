@@ -10,6 +10,8 @@ m3_washer_radius = 3.5 + extra_radius;
 m3_major = 2.85;
 m3_radius = m3_major/2 + extra_radius;
 m3_wide_radius = m3_major/2 + extra_radius + 0.2;
+// For M3 holes that needs to be tapped in the plastic
+m3_tap_radius = 2.5/2 + extra_radius;
 
 // NEMA17 stepper motors.
 motor_shaft_diameter = 5;

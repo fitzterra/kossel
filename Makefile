@@ -5,7 +5,7 @@ all: logotype.stl m5_internal.stl frame_top.stl frame_motor.stl carriage.stl \
 carriage2.stl endstop.stl glass_tab.stl effector.stl retractable.stl \
 power_supply.stl extruder.stl frame_extruder.stl glass_frame.stl plate_3x.stl \
 plate_1x.stl switch_holder.stl hotend_fan.stl card.stl tower_slides.stl \
-rod_connector.stl
+rod_connector.stl effector_e3d.stl effector_e3d_plate.stl
 
 .SECONDARY:
 
@@ -34,6 +34,12 @@ card.stl: | $(STLDIR)/logotype.stl $(STLDIR)/card.stl
 # fine really.
 $(STLDIR)/%.stl: %.scad
 	openscad -m make -o $@ $<
+
+$(STLDIR)/effector_e3d.stl: effector_e3d.scad
+	openscad -m make -o $@ -D print=false $<
+
+$(STLDIR)/effector_e3d_plate.stl: effector_e3d.scad
+	openscad -m make -o $@ -D print=true $<
 
 ## This is the block we should run when the meshlab issue is resolved:
 #$(STLDIR)/%.stl: $(STLDIR)/%.ascii.stl
