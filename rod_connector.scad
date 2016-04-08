@@ -27,6 +27,15 @@ trx_extra=8; // Any optional extra length to add to traxxas side - extends the r
 trx_wall=0.6; // Wall thickness on traxxas side
 trxDia = trx_dia+tolerance+trx_wall*2;    // 2 Walls per side
 
+// There are other ball joints that have a hex end instead of a round connector
+// end. Not sure if these are traxxas or not, but I got one of these in the 12
+// I ordered from Bangood :-( It's also slightly shorter than the traxxas. The
+// hex diameter below is the distance between the furthest edges on the hex
+// shaft side. If specifying hexEnd=true to the TraxxasEnd() module, if will
+// add a hex shaped hole to fit this rod end.
+joint_hex_dia = 6.5;
+joint_hex_inset = 7;
+
 // Output connector info
 echo("Connector rod diameter: ", rodDia);
 echo("Connector full length: ", rod_inset+rod_extra+trx_inset+trx_extra);
@@ -47,23 +56,35 @@ module RodEnd() {
 
 /**
  * Connector for traxxas end side.
+ *
+ * @param hexEnd: If true, it will make a hexagonal hole for the ball joint
+ *        connector end. See the description above for the joint_hex_dia variable.
  **/
-module TraxxasEnd() {
+module TraxxasEnd(hexEnd=false) {
+    // Height is always based on the traxxas parameters
+    height = trx_inset + trx_extra;
+    // The inset hole depends on the hexEnd param
+    inset_height = height - (hexEnd==false ? trx_inset : joint_hex_inset);
     difference() {
         // The traxxas side tapers from the rod diameter to the traxxas dia
-        cylinder(d1=rodDia, d2=trxDia, h=trx_inset+trx_extra);
-        translate([0, 0, trx_extra])
-            cylinder(d=trx_dia+tolerance, h=trx_inset+1);
+        cylinder(d1=rodDia, d2=trxDia, h=height);
+        translate([0, 0, inset_height])
+            if (hexEnd==false)
+                // Normal traxxas round hole
+                cylinder(d=trx_dia+tolerance, h=trx_inset+1);
+            else
+                // Hexagonal rod end hole
+                cylinder(d=joint_hex_dia+tolerance, h=joint_hex_inset+1, $fn=6);
     }
 }
 
 /**
  * Complete connector
  **/
-module Connector() {
+module Connector(hexEnd=false) {
     RodEnd();
     translate([0, 0, rod_inset+rod_extra])
-        TraxxasEnd();
+        TraxxasEnd(hexEnd);
 }
 
-Connector();
+Connector(false);
