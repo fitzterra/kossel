@@ -1,7 +1,10 @@
 // Virtual build based on Mini Kossel Visual Calculator by Jaydmdigital:
 // https://github.com/Jaydmdigital/mk_visual_calc
 
+include <../configuration.scad>;
 use <../microswitch.scad>;
+use <../nema17.scad>;
+use <PowerSupply.scad>;
 
 $fn=60;
 
@@ -20,7 +23,7 @@ carriage_color=[0/255, 180/255, 255/255, 0.98];
 endstop_color=[0/255, 80/255, 255/255, 0.98];
 rod_color=[0.1,0.1,0.1,0.88];
 t_slot_color="silver";
-plate_color=[0.7,0.7,1.0,0.5];
+plate_color=[200/255, 200/255, 200/255, 0.5];
 
 // The minimul angle of the diagonal rod as full extension while still being on
 // the print surface.
@@ -116,7 +119,8 @@ DELTA_SMOOTH_ROD_OFFSET = frame_r;
 // on the carriage, level with the center of the pivot point for that rod on
 // the effector. The distance from this line to the effector pivot point is
 // this value. 
-DELTA_RADIUS = DELTA_SMOOTH_ROD_OFFSET - effector_offset - (slider_frame_offset + carriage_depth/2 + frame_depth );
+DELTA_RADIUS = DELTA_SMOOTH_ROD_OFFSET - effector_offset
+               - (slider_frame_offset + carriage_depth/2 + frame_depth );
 // Rember we need to subtract the effect offset so we account for keeping the
 // hotend tip on the edge of the build surface.
 // Translation: Calculate the hypotenuse of the triangle formed with the
@@ -126,6 +130,9 @@ DELTA_RADIUS = DELTA_SMOOTH_ROD_OFFSET - effector_offset - (slider_frame_offset 
 // point of the rod on the effector. The hypotenuse of this triangle is the
 // exact length required for the delta rods.
 DELTA_DIAGONAL_ROD =((DELTA_RADIUS*2) - effector_offset) / cos(delta_min_angle);
+// The above is the length based on the min angle. The exact length of the final
+// rods after making them are 350mm from pivot center to pivot center.
+DELTA_DIAGONAL_ROD = 350;
 
 // Radius for the diagonal rods.
 rod_r = 6/2;
@@ -134,7 +141,8 @@ delta_rod_angle = acos(DELTA_RADIUS/DELTA_DIAGONAL_ROD);
 // The vertical distance from the pivot on the effector to the pivot on the carriage
 delta_vert_l = sqrt((DELTA_DIAGONAL_ROD*DELTA_DIAGONAL_ROD)-(DELTA_RADIUS*DELTA_RADIUS));
 // The -4 is the thickness of the motor frame wall
-surface_r = DELTA_SMOOTH_ROD_OFFSET * sin(30) + effector_offset - frame_depth - frame_wall_thickness ;
+surface_r = DELTA_SMOOTH_ROD_OFFSET * sin(30) + effector_offset
+            - frame_depth - frame_wall_thickness ;
 
 
 echo("DELTA_RADIUS:", DELTA_RADIUS, "mm");
@@ -330,8 +338,8 @@ module frameHorizontal(level="b", side="f") {
  * Module to draw any part of any of the three towers.
  *
  * @param pos: Which of the three to draw: "l"=left, "r"=right or "b"=back
- * @param part: Which part to print: "extrusion", "frame, "slider", "carriage"
- *        or "ensdtop"
+ * @param part: Which part to print: "extrusion", "frame, "slider", "carriage",
+ *        "ensdtop" or motor
  * @param level: The level for the part: "t" for top, "b" for bottom. This is
  *        only applicable to "frame" ("b" level draws the motor mount frame
  *        parts, and "t" draws the top frame parts) and "endstop". 
@@ -364,6 +372,10 @@ module towerPart(pos="l", part="slider", level="b") {
                 Carriage();
             else if(part=="endstop")
                 Endstop(level, true);
+            else if(part=="motor")
+                translate([0, 44.1, 42/2])
+                    rotate([90, 0, 0])
+                        nema17();
 }
 
 /**
@@ -391,7 +403,7 @@ module Spider() {
 }
 
 module Printer() {
-%cylinder(r=frame_r, h=1, center=true);
+*%cylinder(r=frame_r, h=1, center=true);
 // All the horizontal frame parts.
 for (s = ["f", "l", "r"])
     for (l = ["b", "t"])
@@ -405,6 +417,7 @@ for(p=["l", "b", "r"]) {
     for (l = ["b", "t"]) {
         towerPart(p, "frame", l);
         towerPart(p, "endstop", l);
+        towerPart(p, "motor", l);
     }
 }
 
@@ -412,31 +425,47 @@ for(p=["l", "b", "r"]) {
 translate([0, 0, effector_z])
     Spider();
 
-//hotend
-*translate([0,0,frame_motor_h + effector_h + effector_z -hotend_l/2 - explode*2]) color(t_slot_color) cylinder(h=hotend_l,r=10,center=true);
+// The hotend if not using the E3D option
+if (effectorOpt != "e3d")
+    translate([0, 0, frame_motor_h + effector_h + effector_z -hotend_l/2 - explode*2])
+        color(t_slot_color)
+            cylinder(h=hotend_l,r=10,center=true);
 
 // Build plate
-translate([0,0,plate_z+explode])color(plate_color)cylinder(h=plate_thickness,r=plate_d/2,center=true,$fn=120);
+translate([0,0,plate_z+explode])
+    color(plate_color)
+        cylinder(h=plate_thickness, r=plate_d/2, center=true, $fn=120);
+
 // Glass tabs
-*for(i=[0:2]) {
+for(i=[0:2]) {
  rotate(i*120){
-  translate([0,-frame_offset,frame_motor_h+explode/4]) color(frame_color)import("glass_tab.stl"); //X-Z
-  translate([0,-frame_offset,frame_motor_h+7.5+3+explode*2]) rotate([0,180,-30]) translate([2,-2,0])color(frame_color)import("Spiral_Bed_Clamp.stl"); // needed to translate the clamp so the hole was centered.
+  translate([0,-frame_offset,frame_motor_h+explode/4])
+    color(frame_color)
+        import(STLPath("glass_tab.stl")); //X-Z
+  translate([0,-frame_offset,frame_motor_h+7.5+3+explode*2])
+    rotate([0,180,-30])
+        translate([2,-2,0])
+            color(frame_color)
+                import(STLPath("Spiral_Bed_Clamp.stl")); // needed to translate the clamp so the hole was centered.
  }
 }
 
-//translate([20,20,frame_motor_h + effector_h/2 + effector_z - explode])
-translate([separation,effector_offset,effector_h/2 + effector_z - explode])
+// Guides to indicate the delta vertical and horizontal lines
+translate([separation, effector_offset, effector_h/2 + effector_z - explode])
     rotate([0,-90,-90])
         color("blue", 0.5)
             cylinder(h=DELTA_RADIUS, r=rod_r/4);
-//translate([20,20+DELTA_RADIUS,frame_motor_h + effector_h/2 + effector_z - explode])
-translate([separation,effector_offset+DELTA_RADIUS,effector_h/2 + effector_z - explode])
+translate([separation, effector_offset+DELTA_RADIUS, effector_h/2 + effector_z - explode])
     rotate([0,0,-90])
         color("orange", 0.5)
             cylinder(h=delta_vert_l, r=rod_r/4);
 //Ramps mount
 //translate([-80,145,40])rotate([0,0,-120]) color(frame_color)import("mega2560_kutu_Kulak.stl");
+
+// The power supply
+*translate([100, 100, 50])
+    rotate([90, 0, 120])
+        PSU();
 }
 
 Printer();
