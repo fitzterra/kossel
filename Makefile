@@ -7,7 +7,7 @@ power_supply.stl extruder.stl frame_extruder.stl glass_frame.stl plate_3x.stl \
 plate_1x.stl switch_holder.stl hotend_fan.stl card.stl tower_slides.stl \
 rod_connector.stl glass_grip_tab.stl effector_e3d.stl effector_e3d_plate.stl \
 effector_e3d_effector.stl effector_e3d_posts.stl effector_e3d_mount_cap.stl \
-effector_e3d_groove_mount.stl effector_e3d_pen_holder.stl effector_e3d_zp_stop.stl
+effector_e3d_groove_mount.stl effector_e3d_pen_holder.stl z-probe_detachable.stl
 
 .SECONDARY:
 
@@ -49,10 +49,6 @@ $(STLDIR)/effector_e3d_plate.stl: effector_e3d.scad
 $(STLDIR)/effector_e3d_effector.stl: effector_e3d.scad
 	openscad -m make -o $@ -D print=true -D 'renderParts=["effector"]' $<
 
-# The E3D effector zProbe spring stopper
-$(STLDIR)/effector_e3d_zp_stop.stl: effector_e3d.scad
-	openscad -m make -o $@ -D print=true -D 'renderParts=["zp_stop"]' $<
-
 # The E3D effector mount posts
 $(STLDIR)/effector_e3d_posts.stl: effector_e3d.scad
 	openscad -m make -o $@ -D print=true -D 'renderParts=["posts"]' $<
@@ -68,6 +64,10 @@ $(STLDIR)/effector_e3d_groove_mount.stl: effector_e3d.scad
 # The pen holder fitting the E3D effector
 $(STLDIR)/effector_e3d_pen_holder.stl: effector_e3d.scad
 	openscad -m make -o $@ -D print=true -D 'renderParts=["pen_holder"]' $<
+
+# The detachable Z-Probe and cradle
+$(STLDIR)/z-probe_detachable.stl: z-probe_detachable.scad
+	openscad -m make -o $@ -D print=true $<
 
 ## This is the block we should run when the meshlab issue is resolved:
 #$(STLDIR)/%.stl: $(STLDIR)/%.ascii.stl
