@@ -434,14 +434,14 @@ if (effectorOpt != "e3d")
 // Build plate
 translate([0,0,plate_z+explode])
     color(plate_color)
-        cylinder(h=plate_thickness, r=plate_d/2, center=true, $fn=120);
+        cylinder(h=plate_thickness, d=plate_d, center=true, $fn=120);
 
 // Glass tabs
 for(i=[0:2]) {
  rotate(i*120){
   translate([0,-frame_offset,frame_motor_h+explode/4])
     color(frame_color)
-        import(STLPath("glass_tab.stl")); //X-Z
+        import(STLPath("glass_grip_tab.stl")); //X-Z
   translate([0,-frame_offset,frame_motor_h+7.5+3+explode*2])
     rotate([0,180,-30])
         translate([2,-2,0])

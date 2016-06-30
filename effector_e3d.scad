@@ -6,13 +6,15 @@
 include <configuration.scad>;
 use <e3d-type-hotend.scad>;
 
-// Print and render options. Uncomment those parts to be rendered or printed.
+// Print and render options. Comment/uncomment those parts to be rendered or printed.
 renderParts = [
+    //"all",          // This is more usefull with print==true
     "effector",
-    "posts",
-    "groove_mount",
-    "mount_cap",
-    "hotend"
+    //"posts",
+    //"groove_mount",
+    //"mount_cap",
+    //"hotend",
+    "pen_holder",
 ];
 // Set true to make a plate of the selected parts above for printing
 print = false;
@@ -50,7 +52,6 @@ groove_mount_slot_radius = 6.25;
 groove_mount_lip_radius = 8.1;
 groove_mount_lip_depth = 1;
 
-
 // Mount Cap parameters
 tol = 0.6;  // Additional tollerance to add to cylinder diameters for tight printing
 mount_cap_dia = (offset*2)-5;   // Slightly smaller than the effector
@@ -60,6 +61,11 @@ e3d_top_flange_height = 4 + 0.5;// Top flange height + some to sink into cap
 mount_cap_height = 6;           // Height of end cap
 m3_cap_dia = 5.4 + tol;         // Diameter of the hex cap M3 screw for sinking
 m3_cap_height = 3.5 + 1.3;      // Cap height plus a little extra for sinking
+
+// Pen holder params
+pen_holder_height = height-4;
+pen_holder_id = 9.3;                // Inner Diameter for pen hole
+pen_holder_od = pen_holder_id + 8;  // Outer Diameter for pen hole
 
 /**
  * Module that generates the effector base
@@ -128,9 +134,9 @@ module EffectorE3D() {
                                      center=true, $fn=6);
 
             }
-    
     }
 }
+
 
 //=================================================
 /**
@@ -393,18 +399,61 @@ module MountCap() {
             }
     }
 }
+
+/**
+ * Module for a pen holder that fits on top of the effector.
+ *
+ * @param height: Defaults to the same height as the effector.
+ **/
+module PenHolder(height=pen_holder_height, ring_id=pen_holder_id, ring_od=pen_holder_od) {
+    // Width of the mounting tabs. This is hardcoded in EffectorE3D.
+    tab_width = 7;
+    // There is an additional 4mm from the center of the mount screw to end of
+    // the mount tab on the effector.
+    tab_len = mount_radius + 4;
+    // The inner diameter for the pen ring
+    ring_id = 9.3;
+    // The ring wall thickness
+    ring_wall = (ring_od - ring_id)/2;
+
+    difference() {
+        union() {
+            // The three mount tabs
+            for (a = [30:120:290])
+                rotate([0, 0, a]) {
+                    translate([0, -tab_width/2, -height/2])
+                        cube([tab_len, tab_width, height]);
+            }
+            // The center hub
+            cylinder(d=ring_id+ring_wall*2, h=height, center=true, $fn=64);
+        }
+        // The pen hole
+        cylinder(d=ring_id, h=height+1, center=true, $fn=64);
+        // The tab mount and pen holder screw holes
+        for (a = [30:120:290])
+            rotate([0, 0, a]) {
+                translate([mount_radius, 0, 0])
+                    #cylinder(r=m3_wide_radius, h=height+4, center=true, $fn=12);
+                rotate([0, 0, 60])
+                    translate([ring_id/2+ring_wall+1, 0, 0])
+                        rotate([0, -90, 0])
+                            #cylinder(r=m3_tap_radius, h=ring_wall+2, $fn=12);
+        }
+    }
+}
+
 for (p=renderParts) {
-    if(p=="effector")
-        // Effector is always center wether printing or not
+    if(p=="effector" || p=="all")
+        // Effector is always center whether printing or not
         translate([0, 0, height/2])
             EffectorE3D();
-    if(p=="posts")
+    if(p=="posts" || p=="all")
         translate([0, print?post_height+mount_radius*3/2:0, print?0:height])
             rotate([0, 0, 180])
                 // Printing is handled by the assembly module
                 //MountPostsAssembly(tapM3s, print);
                 MountPosts(print);
-    if(p=="groove_mount")
+    if(p=="groove_mount" || p=="all")
         if(print==false)
             translate([0, 0, height+post_height-groove_mount_height])
                 GrooveMount(tapM3s);
@@ -412,7 +461,7 @@ for (p=renderParts) {
             translate([-mount_radius-groove_mount_radius*2+5, 0, 0])
                 GrooveMount(tapM3s);
         }
-    if(p=="mount_cap")
+    if(p=="mount_cap" || p=="all")
         if(print==false)
         translate([0, 0, height+post_height+mount_cap_height])
             rotate([180, 0, 0])
@@ -422,9 +471,17 @@ for (p=renderParts) {
             translate([mount_radius+mount_cap_dia, 0, 0])
                 MountCap();
         }
-    if(p=="hotend" && print==false)
+    if(print==false && (p=="hotend" || p=="all"))
         translate([0, 0, -1])
             E3DHotEnd();
+    if(p=="pen_holder" || p=="all")
+        if(print==false)
+            translate([0, 0, height+pen_holder_height/2+1])
+                PenHolder();
+        else {
+            translate([0, -mount_radius*2, pen_holder_height/2])
+                PenHolder();
+        }
 }
 echo("M3 bolts for mount posts when tapping into effector:", mount_cap_height-m3_cap_height+post_height+height*2/3);
 
