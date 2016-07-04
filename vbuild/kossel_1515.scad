@@ -47,7 +47,7 @@ frame_extrusion_l = 360;
 // Length of extrusions for towers, need cut length
 frame_extrusion_h = 650;
 frame_extrusion_w = 15;
-// The distance from the center of the extrustion to the butt edge of the
+// The distance from the center of the extrusion to the butt edge of the
 // vertex. Comes from the vertex.scad file
 vertex_offset = 22.5;
 // Used when calculating offsets
@@ -167,7 +167,10 @@ calc_slider_z = frame_top - carriage_height - endstop_h - delta_vert_l - frame_t
 
 plate_d = surface_r * 2;
 plate_thickness = 3;
-plate_z = plate_thickness/2 + frame_motor_h + 3.82;// + plate_thickness; //not added yet, but there will be glass tabes (5mm) and the plate thickness is 3)
+//not added yet, but there will be glass tabes (5mm) and the plate thickness is 3)
+plate_z = plate_thickness/2 + frame_motor_h + 3.82;// + plate_thickness;
+//**** Overwrite calculated figures with actual heated bed sizes ***
+plate_d = 220;  // Aluminium heated bed
 
 hotend_l = 45;
 calc_max_z = carriage_max_z - ( plate_z + hotend_l + delta_vert_l);
@@ -437,7 +440,7 @@ translate([0,0,plate_z+explode])
         cylinder(h=plate_thickness, d=plate_d, center=true, $fn=120);
 
 // Glass tabs
-for(i=[0:2]) {
+*for(i=[0:2]) {
  rotate(i*120){
   translate([0,-frame_offset,frame_motor_h+explode/4])
     color(frame_color)
