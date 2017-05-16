@@ -1,5 +1,5 @@
 /**
- * Model of 24V power supply to be used for the printer and moutning brackets
+ * Model of 24V power supply to be used for the printer and mounting brackets
  * to mount the PSU to the frame as well as to mount a power socket and switch
  * to the PSU.
  *
@@ -14,7 +14,8 @@ use <EndstopWireGuide.scad>
 // Draw options
 print = false;       // Set to true to generate print ouptut
 hookSample = false; // Set to true to only generate a sample of the hook to test fit
-assembly = false;    // Set to true to generate assembly output if not printing
+assembly = true;    // Set to true to generate assembly output if not printing
+bracket = "V";        // Set to "V" or "hook" to select bracket type.
 
 // Main PSU dimensions
 psuW = 115;    // Width
@@ -273,24 +274,7 @@ module extrusion_15(len=240) {
   }
 }
 
-// Generate output
-*if(print) {
-    if(hookSample==false) {
-        PowerSocketBracket();
-        for(x=[0, extrusion+10])
-            translate([x, 20, 0])
-                MountBracket();
-    } else {
-        // Cut a sample print to see if the hook will fit
-        difference() {
-            MountBracket();
-            translate([-1, -1, 5])
-                cube(160);
-            translate([-1, 22, -1])
-                cube(100);
-        }
-    }
-} else if(assembly) {
+module HookAssembly() {
     color("Silver")
         translate([extrusion/2, -30, extrusion/2])
         rotate([0, 90, 90]) {
@@ -309,14 +293,61 @@ module extrusion_15(len=240) {
         translate([-3, y+extrusion/2, 0])
             rotate([90, 0, 0])
                 MountBracket();
+}
+
+module VAssembly() {
+    color("Silver")
+        translate([0, extrusion/2, 0])
+            extrusion_15(psuL+60);
+    for(z=[0, psuBMountHolesY])
+        translate([0, -24+3/2, z+(psuL-psuBMountHolesY)/2])
+            V_MountBracket();
+    translate([-psuW/2, -24, 0])
+        rotate([90, 0, 0])
+            PSU();
+}
+
+// Generate output
+if(print) {
+    if(bracket=="hook") 
+        if(hookSample==false) {
+            PowerSocketBracket();
+            for(x=[0, extrusion+10])
+                translate([x, 20, 0])
+                    MountBracket();
+        } else {
+            // Cut a sample print to see if the hook will fit
+            difference() {
+                MountBracket();
+                translate([-1, -1, 5])
+                    cube(160);
+                translate([-1, 22, -1])
+                    cube(100);
+            }
+        }
+    else  // V-Bracket
+        for(y=[0, 30])
+            translate([0, y, 0])
+                V_MountBracket();
+} else if(assembly) {
+    if(bracket=="hook")
+        HookAssembly();
+    else
+        VAssembly();
 } else {
     // Just show all parts
     translate([-psuW-10, 0, 0])
         PSU();
-    PowerSocketBracket();
-    for(x=[0, extrusion+20])
-        translate([x, 40, 0])
-            MountBracket();
+    if (bracket=="hook") {
+        PowerSocketBracket();
+        for(x=[0, extrusion+20])
+            translate([x, 40, 0])
+                MountBracket();
+    } else {
+        translate([30, 0, 0])
+            V_MountBracket();
+        translate([30, 30, 0])
+            V_MountBracket();
+    }
 }
 
-V_MountBracket();
