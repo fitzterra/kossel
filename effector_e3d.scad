@@ -10,11 +10,11 @@ use <e3d-type-hotend.scad>;
 renderParts = [
     //"all",          // This is more usefull with print==true
     "effector",
-    //"posts",
-    //"groove_mount",
-    //"mount_cap",
-    //"hotend",
-    "pen_holder",
+    "posts",
+    "groove_mount",
+    "mount_cap",
+    "hotend",
+    //"pen_holder",
 ];
 // Set true to make a plate of the selected parts above for printing
 print = false;
@@ -38,9 +38,15 @@ cone_r2 = 14;
 
 // Mount posts and Fan parameters
 post_height=36;
+post_rad = 4;   // Radius for round part of mount post - also half the square side width
 fan_size = 30; // Fan width/height size. This effector is best with a 30x30 fan
+fan_corner_rad = 2.25;  // Radius fan corners
 fan_mount_hole_d = 24;   // Distance between mounting holes of the fan
-fan_mount_depth = 10;       // Thickness of mounting plate
+fan_depth = 10;       // Thickness of fan
+fan_blade_dia = fan_size-2; //Diameter of the hole for the blades 
+fan_offs = 1.0; // The amount of clearance from the edge of the hotend hole to
+                // the inside of the fan edge which will still allow the fan to
+                // not interfere with the rod ends. 
 
 // Goove mount parameters
 groove_mount_radius = 18;
@@ -138,65 +144,11 @@ module EffectorE3D() {
 }
 
 
-//=================================================
 /**
- * Module that generates the three mounting posts.
+ * Generates a sample fan without blades
  **/
-module MountPosts() {
-    // The original has posts that taper to the middle, but I do not like that
-    // very much. Change this setting to either use the original or the same
-    // radius option.
-    original = false;
-
-    // Post radius
-    post_rad=4;
-    // Tapper radius if original above is true
-    tap_rad = 2.5;
-    difference() {
-        union() {
-            // The main posts at 120° offsets on mount_radius
-            for (a = [0:120:359])
-                rotate([0, 0, a]) {
-                    $fn = 64;
-                    if (original) {
-                        // Original tappered post
-                        translate([0, mount_radius,0])
-                            cylinder(r1=post_rad, r2=tap_rad, h=post_height/2);
-                        translate([0, mount_radius,post_height/2])
-                            cylinder(r1=tap_rad,r2=post_rad, h=post_height/2);
-                    } else {
-                        // Non-tappered post
-                        translate([0, mount_radius,0])
-                            cylinder(r=post_rad, h=post_height+a/4);
-                    }
-                }
-
-            #translate([-1*mount_radius*cos(30),
-                       -1*mount_radius*sin(30)-2,
-                       post_height/2])
-                cube([8, post_rad, post_height], center=true); 
-            translate([mount_radius*cos(30),
-                       -1*mount_radius*sin(30)-2,
-                       post_height/2])
-                cube([8, post_rad, post_height], center=true);  
-            translate([0, mount_radius+2, post_height/2])
-                cube([8, post_rad, post_height], center=true);  
-        }
-
-        for (a = [0:120:359])
-            rotate([0, 0, a]) {
-                translate([0, mount_radius, 0])
-                    cylinder(r=m3_wide_radius, h=2*post_height+height, center=true, $fn=12);
-            }
-    }
-}
-  
-/**
- * Cube for fan and mounting holes
- **/
-module FanMount(tapM3s=false) {
-    $fn = 60;
-    corner_rad = 2;
+module FanSample(tapM3s=false) {
+    $fn=80;
 
     mount_hole_coords = [ 
         [ fan_mount_hole_d/2,  fan_mount_hole_d/2, 0],
@@ -207,55 +159,19 @@ module FanMount(tapM3s=false) {
     difference() {
         // Main fan mount cube with rounded corners
         minkowski() {
-            cube([fan_size-corner_rad,
-                  fan_size-corner_rad,
-                  fan_mount_depth/2], center=true);
-            cylinder(r=corner_rad, h=fan_mount_depth/2, center=true);
+            cube([fan_size - fan_corner_rad*2,
+                  fan_size - fan_corner_rad*2,
+                  fan_depth/2], center=true);
+            cylinder(r=fan_corner_rad, h=fan_depth/2, center=true);
         }
         // Central cutout
-        cylinder(d=fan_size-3, h=fan_mount_depth*2, center=true, $fn=120);
+        cylinder(d=fan_blade_dia, h=fan_depth+0.2, center=true);
 
         // 4 mounting bolt holes for fan
         for (i = mount_hole_coords) {
             translate(i)
-                cylinder(r=(tapM3s ? m3_tap_radius : m3_radius),
-                         h=fan_mount_depth*2, center=true);
-            // Recesses for nuts if we do not use tapping
-            if(tapM3s==false)
-            translate([0, 0, -4])
-                translate(i)
-                    cylinder(r=m3_nut_radius, h=18, center=true, $fn=6);
+                cylinder(r=m3_radius, h=fan_depth+0.2, center=true);
         }                   
-    }
-}
-
-/**
- * Module to assemble the mount posts and fan bracket, and cut out space for the
- * hotend and top plate.
- *
- * @param tapM3s: Whether to use smaller holes in fan mount for tapping, or
- *        larger holes and recesses for M3 nuts.
- * #param print: If false, the posts and fan mount are drawn as for assembly.
- *        If true, they are drawn flat for printing.
- **/
-module MountPostsAssembly(tapM3s=false, print=false) {
-    difference(){
-        // Posts and fan bracket assembly
-        union(){
-            MountPosts();
-            translate([0,
-                       -1 * mount_radius * sin(30) + fan_mount_depth/2 - 4,
-                       post_height/2 - 2])
-                *rotate([90,0,0])
-                    FanMount(tapM3s);
-        }
-        // Cut out for groove mount, leaving a 0.3mm gap below and a 1mm gap on
-        // the radius
-        *translate([0, 0, post_height-groove_mount_height-0.3])
-            cylinder(r=groove_mount_radius+1, h=groove_mount_height+1, $fn=120);
-        // Space for hotend
-        *translate([0,0,0])
-            cylinder(r=13, h=post_height*2, center=true, $fn=120);
     }
 }
 
@@ -302,51 +218,115 @@ module GrooveMount(tapM3s=false) {
     }
 }
 
-//-------------------------------------------------
-
-module Post(height, rad, tap_rad=0) {
+/**
+ * Generates one mount post using post_rad and post_height defined above.
+ **/
+module Post() {
     $fn = 64;
     difference() {
         union() {
-            if (tap_rad>0) {
-                // Original tappered post
-                cylinder(r1=rad, r2=tap_rad, h=height/2);
-                translate([0, 0, height/2])
-                    cylinder(r1=tap_rad, r2=rad, h=height/2);
-            } else {
-                // Non-tappered post
-                cylinder(r=rad, h=height);
-            }
-            translate([-rad, 0, 0])
-                cube([rad*2, rad, height]);
+            cylinder(r=post_rad, h=post_height);
+            translate([-post_rad, 0, 0])
+                cube([post_rad*2, post_rad, post_height]);
         }
         translate([0, 0, -1])
-            cylinder(r=m3_wide_radius, h=height+2);
+            cylinder(r=m3_wide_radius, h=post_height+2);
     }
 
 }
 
 /**
+ * Creates a "bracket" between two posts to which the fan can be mounted.
+ * Note that although this is parameteric, the fan should still be able to fit
+ * and also not interfere with the rod ends.
+ **/
+module FanPostsMount() {
+    $fn=64;
+    postWidth = post_rad*2;
+    // Place a post in each required position
+    difference() {
+        // The solid stock from post to post to become the mount
+        hull()
+            for (a=[120, 240])
+                rotate([0, 0, a])
+                    translate([0, mount_radius, 0])
+                        translate([0, 0, post_height/2])
+                            cube([postWidth, postWidth, post_height], center=true);
+        // We need to add the post mount holes seperately because the hull()
+        // will close them if we add them when making the posts above.
+        for (a=[120, 240])
+            rotate([0, 0, a])
+                translate([0, mount_radius, 0])
+                    translate([0, 0, post_height/2])
+                        cylinder(r=m3_wide_radius, post_height+0.2, center=true);
+        // Cut the solid mount on the fan side to leave enough room so the fan
+        // does not interfere with the rod ends. This is based on the amount of
+        // offset for the fan from the hotend center hole.
+        translate([0, -(hotend_radius+fan_offs+5), post_height/2])
+            cube([hotend_radius*4, 10, post_height+6], center=true);
+        // Hole for fan and mount screws
+        translate([0, -hotend_radius, fan_size/2])
+            rotate([90, 0, 0])
+                union () {
+                cylinder(d=fan_blade_dia+0.25, h=hotend_radius*2, center=true);
+                // Mount holes
+                for (x=[-fan_mount_hole_d/2, fan_mount_hole_d/2])
+                    for (y=[-fan_mount_hole_d/2, fan_mount_hole_d/2])
+                        translate([x, y, 0])
+                            cylinder(r=m3_tap_radius, h=hotend_radius*2, center=true);
+                }
+        // Carve out for hotend
+        translate([0, 0, -0.1])
+            cylinder(r=hotend_radius, h=post_height+0.2);
+        // Space for groove_mount
+        translate([0, 0, post_height-groove_mount_height-0.5])
+            cylinder(r=groove_mount_radius+0.5, h=groove_mount_height+0.6);
+    }
+}
+
+/**
  * Alternative module for mount posts.
  * NOTE! Along with the Post() module, this is still a work in progress!!
+ *
+ * @param fanBracket: If true (default), it will create on post and one bracket
+ *                    for a fan. If false, it will create 3 posts.
+ * @param print: If true, layout will be for print, else it will be for assembly.
  **/
-module MountPosts(print=false) {
+module MountPostsAssembly(fanBracket=true, showFan=true, print=false) {
     if(print==false) {
+        // The number and positions for the posts depending on fanBracket.
+        postsPos = fanBracket ? [0] : [0:120:359.9];
         // Place a post in each required position
-        for (a=[0:120:359])
+        for (a=postsPos)
             rotate([0, 0, a])
                 translate([0, mount_radius, 0])
                     Post(post_height, 4);
+        // Add a fan bracket?
+        if(fanBracket)
+            FanPostsMount();
+        // Include a sample fan?
+        if(showFan)
+            translate([0, -fan_depth/2-hotend_radius-fan_offs, fan_size/2])
+                rotate([90, 0, 0])
+                    color([20/255, 20/255, 20/255])
+                        FanSample();
     } else {
-        for(a=[0:2])
+        // The number and positions for the posts depending on fanBracket.
+        postsPos = fanBracket ? [0] : [0:2];
+        for(a=postsPos)
             translate([0, 0, 4])
-            rotate([-90, 0, 0])
-                translate([10*a, 0, 0])
-                    Post(post_height, 4);
+                rotate([-90, 0, 0])
+                    translate([10*a, 0, 0])
+                        Post(post_height, 4);
+        // Fan bracket?
+        if(fanBracket)
+            translate([0, post_height, 0])
+            rotate([90, 0, 0])
+                translate([hotend_radius*1.5+10, hotend_radius+fan_offs, 0])
+                    FanPostsMount();
 
     }
 }
-//=================================================
 
 /**
  * E3D hotend mount cap
@@ -451,8 +431,7 @@ for (p=renderParts) {
         translate([0, print?post_height+mount_radius*3/2:0, print?0:height])
             rotate([0, 0, 180])
                 // Printing is handled by the assembly module
-                //MountPostsAssembly(tapM3s, print);
-                MountPosts(print);
+                MountPostsAssembly(print=print);
     if(p=="groove_mount" || p=="all")
         if(print==false)
             translate([0, 0, height+post_height-groove_mount_height])
