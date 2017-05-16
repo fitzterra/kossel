@@ -1,4 +1,4 @@
-// The effector with retractable z-probe.
+// The effector with magneticly detachable z-probe.
 
 $fn=64;
 
