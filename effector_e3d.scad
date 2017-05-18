@@ -1,20 +1,28 @@
 // Origin: http://www.thingiverse.com/thing:788137
 // Modified: Tom Coetser <fitzterra@icave.net> 2016
-//   * A complete reorganization and quite a bit of rewrittencode.
+//   * A complete reorganization and quite a bit of rewritten code.
 //   * Also combined all parts into one file with rendering and printing config
 //     options.
 include <configuration.scad>;
 use <e3d-type-hotend.scad>;
+use <e3d_v6_all_metall_hotend.scad>;
 
 // Print and render options. Comment/uncomment those parts to be rendered or printed.
+// This defines the hotend to use, see the comments in renderParts for parts
+// that are affected.
+hotend = 6;     // Either 5 for the E3Dv5 or 6 for the E3Dv6 hotend.
 renderParts = [
-    //"all",          // This is more usefull with print==true
-    "effector",
-    "posts",
-    "groove_mount",
-    "mount_cap",
+    "all",          // This is more usefull with print==true
+    "effector",   // The effector specific for the hotend version
     "hotend",
+    //--- These will only be rendered for a v5 hotend
+    //"posts",
+    //"groove_mount",
+    //"mount_cap",
+    //"hotendv5",
     //"pen_holder",
+    //--- These will only be rendered for a v6 hotend
+    //"v6Clamp",
 ];
 // Set true to make a plate of the selected parts above for printing
 print = false;
@@ -73,21 +81,110 @@ pen_holder_height = height-4;
 pen_holder_id = 9.3;                // Inner Diameter for pen hole
 pen_holder_od = pen_holder_id + 8;  // Outer Diameter for pen hole
 
+// E3d V6 parameters
+v6ClampHeight = 12; // Height above effector for hot end top for v6
+
+
+/**
+ * Creates a cutter for cutting the center hole in the effector for a V6 hotend
+ * using the upper clamp mount.
+ *
+ * The clamp is in two parts and to be able to get the effector out, the cut
+ * should be inset slightly to the one side to allow the hotend to be inserted
+ * and then slide back to fit into the mounting ridges.
+ *
+ * This module allows for creating a cutter for either the clamp, or the
+ * effector. For the clamp itself, no sliding cut is needed. This is only
+ * needed for the effector.
+ *
+ * @param slide: If true, creates a cuttor for the effector, if false if
+ *               creates a cutter for the clamp.
+ **/
+module v6Cutter(slide=true) {
+    $fn = 96;
+
+    // These values are from e3d_v6_all_metall_hotend.scad for the Chinese
+    // knockoff version of the E3D V6 hotend.
+    cyl1 = [8, 3.7];        // Top cylinder where bowden fitting screws in
+    cyl2 = [6, 6];          // Thinner cylinder for clamping
+    cyl3 = [8, 6.6];        // Cylider below clamp cylinder all the way to fins
+    cyl4 = [11.15, 10];     // Cylinder for fins - part height
+    slideOffs = (cyl3[0] - cyl2[0])*2; // Length that will allow sliding hotend out
+
+    translate([0, 0, v6ClampHeight+0.05]) {
+        scale([1.05, 1.05, 1.05])
+            e3d_knockoff(true, 0);
+        if(slide) {
+        translate([slideOffs, 0, 0])
+            scale([1.05, 1.05, 1.05])
+                e3d_knockoff(true, 0);
+        scale([1.05, 1.05, 1.05])
+            union() {
+                translate([0, -cyl2[0], -cyl1[1]-cyl2[1]]) {
+                    cube([slideOffs, cyl2[0]*2, cyl2[1]]);
+                    translate([0, -(cyl3[0]-cyl2[0]), -cyl3[1]]) {
+                        cube([slideOffs, cyl3[0]*2, cyl3[1]]);
+                        translate([0, -(cyl4[0]-cyl3[0]), -cyl4[1]])
+                            cube([slideOffs, cyl4[0]*2, cyl4[1]]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Creates a clamp to be placed on top of the effector for a V6 hotend. Either
+ * the right or left side can be selected.
+ *
+ * The bolt parameters may need some adjustment depending on your needs.
+ *
+ * @param left: If true, generates the left side, else the right side.
+ **/
+module v6Clamp(left=true) {
+    $fn = 96;
+    boltLen = 25;
+    boltInset = 3;
+    boltHeadHeight = 3;
+    boltHeadDia = 5.5 + 0.5;    // 0.5 is for fit tollerance
+    nutHeight = 6;
+
+    difference() {
+        cylinder(r1=offset-2, r2=offset*2/3, h=v6ClampHeight);
+        for(y=[-offset/2, offset/2])
+            translate([-boltInset, y, m3_nut_radius+3])
+                rotate([0, 90, 0]) {
+                    cylinder(r=(tapM3s?m3_tap_radius:m3_wide_radius),
+                             h=boltLen, center=true);
+                    translate([0, 0, boltLen/2])
+                        cylinder(d=boltHeadDia, h=boltHeadHeight+10);
+                    if(!tapM3s)
+                        translate([0, 0, -boltLen/2-10])
+                            cylinder(r=m3_nut_radius*1.05, h=nutHeight+10, $fn=6);
+                }
+        v6Cutter(false);
+        translate([left?-0.5:-offset-2, -offset-2, -0.1])
+            cube([offset+2.5, offset*2+4, v6ClampHeight+0.2]);
+    }
+}
+
 /**
  * Module that generates the effector base
  **/
-module EffectorE3D() {
+module EffectorE3D(ver=6) {
     difference() {
+        // Main effector including rod mount blocks and endcap mount blocks if not V6
         union() {
             // Main pug
             cylinder(r=offset-2, h=height, center=true, $fn=120);
-            // Add the 3 mounting blocks
+            // Add the rod connectors and post mounting blocks for non v6
             for (a = [60:120:359])
                 rotate([0, 0, a]) {
-                    // Mount block posts to upper hotend end cap
-                    rotate([0, 0, 90])
-                        translate([offset-2, 0, 0])
-                            cube([12, 7, height], center=true);
+                    // Mount block posts to upper hotend end cap for non v6
+                    if(ver!=6)
+                        rotate([0, 0, 90])
+                            translate([offset-2, 0, 0])
+                                cube([12, 7, height], center=true);
                     // Mount cones for rods
                     for (s = [-1, 1])
                         scale([s, 1, 1]) {
@@ -121,28 +218,36 @@ module EffectorE3D() {
                         }
                 }
         }
-        // Hole for hotend
-        translate([0, 0, -height/2-0.1])
-            cylinder(r1=hotend_radius+1, r2=hotend_radius, h=height+1, $fn=120);
-    
-        // Mounting holes for posts to upper hotend end cap
-        for (a = [0:120:359])
-            rotate([0, 0, a+60]) {
-                // Bolt hole
-                translate([0, mount_radius, 0])
-                    cylinder(r=(tapM3s?m3_tap_radius:m3_wide_radius), h=2*height,
-                             center=true, $fn=12); 
+        // Mounting holes for posts to upper hotend end cap if not V6
+        if(ver!=6)
+            for (a = [0:120:359])
+                rotate([0, 0, a+60]) {
+                    // Bolt hole
+                    translate([0, mount_radius, 0])
+                        cylinder(r=(tapM3s?m3_tap_radius:m3_wide_radius), h=2*height,
+                                 center=true, $fn=12); 
                 // Nut recess if not tapping
                 if(tapM3s!=true)
-                    translate([0, mount_radius, 1.5])
+                    translate([0, mount_radius, -height/2-0.1])
                         rotate([0, 0, 30])
-                            cylinder(r=m3_nut_radius, h=7+0.1,
-                                     center=true, $fn=6);
+                            cylinder(r=m3_nut_radius, h=5+0.1,
+                                     center=false, $fn=6);
 
             }
-    }
-}
 
+        // Hole for hotend if not v6
+        if(ver!=6)
+            translate([0, 0, -height/2-0.1])
+                cylinder(r1=hotend_radius+1, r2=hotend_radius, h=height+1, $fn=120);
+        else {
+            translate([0, 0, height/2])
+            v6Cutter();
+        }
+    }
+    if(ver==6)
+            translate([0, 0, height/2])
+        v6Clamp();
+}
 
 /**
  * Generates a sample fan without blades
@@ -426,41 +531,52 @@ for (p=renderParts) {
     if(p=="effector" || p=="all")
         // Effector is always center whether printing or not
         translate([0, 0, height/2])
-            EffectorE3D();
-    if(p=="posts" || p=="all")
-        translate([0, print?post_height+mount_radius*3/2:0, print?0:height])
-            rotate([0, 0, 180])
-                // Printing is handled by the assembly module
-                MountPostsAssembly(print=print);
-    if(p=="groove_mount" || p=="all")
-        if(print==false)
-            translate([0, 0, height+post_height-groove_mount_height])
-                GrooveMount(tapM3s);
-        else {
-            translate([-mount_radius-groove_mount_radius*2+5, 0, 0])
-                GrooveMount(tapM3s);
-        }
-    if(p=="mount_cap" || p=="all")
-        if(print==false)
-        translate([0, 0, height+post_height+mount_cap_height])
-            rotate([180, 0, 0])
-                MountCap();
-        else {
-            translate([])
-            translate([mount_radius+mount_cap_dia, 0, 0])
-                MountCap();
-        }
+            EffectorE3D(ver=hotend);
+    // Show the hotend only if not printing
     if(print==false && (p=="hotend" || p=="all"))
-        translate([0, 0, -1])
-            E3DHotEnd();
-    if(p=="pen_holder" || p=="all")
-        if(print==false)
-            translate([0, 0, height+pen_holder_height/2+1])
-                PenHolder();
-        else {
-            translate([0, -mount_radius*2, pen_holder_height/2])
-                PenHolder();
-        }
+        translate([0, 0, hotend==5?-1:v6ClampHeight+height])
+            if(hotend==5)
+                E3DHotEnd();
+            else
+                e3d_knockoff();
+    if(hotend==6) {
+        if(p=="v6Clamp" || p=="all")
+            translate([(p=="all"&&print)?offset*1.5:0, 0, (!print&&p=="all")?height:0])
+                v6Clamp(false);
+    } else {
+        if(p=="posts" || p=="all")
+            translate([0, print?post_height+mount_radius*3/2:0, print?0:height])
+                rotate([0, 0, 180])
+                    // Printing is handled by the assembly module
+                    MountPostsAssembly(print=print);
+        if(p=="groove_mount" || p=="all")
+            if(print==false)
+                translate([0, 0, height+post_height-groove_mount_height])
+                    GrooveMount(tapM3s);
+            else {
+                translate([-mount_radius-groove_mount_radius*2+5, 0, 0])
+                    GrooveMount(tapM3s);
+            }
+        if(p=="mount_cap" || p=="all")
+            if(print==false)
+            translate([0, 0, height+post_height+mount_cap_height])
+                rotate([180, 0, 0])
+                    MountCap();
+            else {
+                translate([])
+                translate([mount_radius+mount_cap_dia, 0, 0])
+                    MountCap();
+            }
+        if(p=="pen_holder" || p=="all")
+            if(print==false)
+                translate([0, 0, height+pen_holder_height/2+1])
+                    PenHolder();
+            else {
+                translate([0, -mount_radius*2, pen_holder_height/2])
+                    PenHolder();
+            }
+    }
 }
 echo("M3 bolts for mount posts when tapping into effector:", mount_cap_height-m3_cap_height+post_height+height*2/3);
+
 

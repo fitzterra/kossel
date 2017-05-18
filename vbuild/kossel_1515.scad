@@ -67,6 +67,7 @@ frame_top = frame_extrusion_h - 10 - frame_top_h + explode;
 // Effector selection
 //effectorOpt = "std";   // Standard Kossel J-Head effector
 effectorOpt = "e3d";   // The included E3D effector design
+e3dVersion = 6;         // The version of E3d hotend - 5 or 6
 // Efector height based on selected seffector
 effector_h = effectorOpt=="std" ? 8 : 10;
 // Distance between the rod mounting surfaces on the effector and carraiges
@@ -74,7 +75,7 @@ separation = 20;
 // Horizontal distance from center to pivot from effector.scad/effector_e3d.scad
 effector_offset = effectorOpt=="std" ? 20 : 23;
 // Select the correct effector STL
-effectorSTL = effectorOpt=="std" ? "effector.stl" : "effector_e3d.stl";
+effectorSTL = effectorOpt=="std" ? "effector.stl" : (e3dVersion==5?"effector_e3d_v5.stl":"effector_e3d_v6.stl");
 
 // The amount of space from the edge of the frame to front carriage mounting
 // face of the slider. This comes from the mgn12_truck_thickness value in
@@ -157,7 +158,7 @@ echo("Build plate radius:",surface_r,"mm");
 carriage_max_z = frame_top - endstop_ms_h - carriage_height;
 // The height at which to place the carriages - this will also determine the
 // height of the effector and extruder.
-carriage_zpos = carriage_max_z - 200;
+carriage_zpos = carriage_max_z - 180;
 
 // Position of the bottom of the effector (or Spider)
 effector_z = carriage_zpos + carriage_pivot_offset - delta_vert_l - effector_h/2;
