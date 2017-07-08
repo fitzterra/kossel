@@ -78,7 +78,7 @@ module carriage(sample_belts=false) {
             // belt clip cubes
             color("SteelBlue")
             for(y=[19, -11]) {
-                translate([2.20, y, horn_thickness/2+1])
+                translate([2.20, y, horn_thickness/2+1]) {
                     difference() {
                         cube([7, 10, horn_thickness-2], center=true);
                         translate([-1.5,-5,-1.5]) {
@@ -89,6 +89,15 @@ module carriage(sample_belts=false) {
                             }
                         }
                     }
+                    // Support for belt clips
+                    translate([-6.5, -5, -1.5]) 
+                        difference() {
+                            cube([3, 10, 3]);
+                            translate([0, -0.1, 3])
+                                rotate([-90, 0, 0])
+                                cylinder(d=6, h=10.2);
+                        }
+                }
             }
         }
 
