@@ -88,6 +88,10 @@ module carriage(sample_belts=false) {
                                     cylinder(r=tooth_radius, h=10);
                             }
                         }
+                        // Angle the belt entry points slightly
+                        translate([y<0?-1.5:-3.4, y<0?3.5:-5.8, -3])
+                            rotate([0, 0, y<0?40:-40])
+                                cube([1.5, 3, horn_thickness]);
                     }
                     // Support for belt clips
                     translate([-6.5, -5, -1.5]) 
@@ -140,3 +144,9 @@ carriage();
     translate([0, -16, -20.5])
         rotate([90, 0, 180])
             import("stl/tower_slides.stl");
+
+*intersection() {
+    carriage();
+    translate([0, 0, 34])
+    cube([15, 80, 60], center=true);
+}
