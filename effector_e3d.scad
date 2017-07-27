@@ -6,17 +6,18 @@
 include <configuration.scad>;
 use <e3d-type-hotend.scad>;
 use <e3d_v6_all_metall_hotend.scad>;
+use <fan_duct.scad>;
 
 // Print and render options. Comment/uncomment those parts to be rendered or printed.
 // This defines the hotend to use, see the comments in renderParts for parts
 // that are affected.
 hotend = 6;     // Either 5 for the E3Dv5 or 6 for the E3Dv6 hotend.
-hotendv6mount = "clamp";    // For the split clamp moulded to the effector
-//hotendv6mount = "holder";   // For v6 split holder mounted onto effector mount tabs
+//hotendv6mount = "clamp";    // For the split clamp moulded to the effector
+hotendv6mount = "holder";   // For v6 split holder mounted onto effector mount tabs
 
 renderParts = [
     //"all",          // This is more usefull with print==true
-    "effector",
+    "effector",   
     "hotend",       // Depends on hotend variable above
     "v6Clamp",   // Only rendered if hotend==6 and hotendv6mount=="clamp"
     "v6_holder", // Only rendered if hotend==6 and hotendv6mount=="holder"
@@ -97,6 +98,9 @@ v6holder_height = 8;
 v6holder_z_offs = v6holder_height; // Height offset for hotend top from bottom of holder.
 v6holder_bolt_offs = 10;  // Offset for clamp bolts from center in horizontal plane
 v6holder_tab_h = 5;     // Height of the tabs for mounting to the effector.
+
+/* [Duct Mount]*/
+
 
 
 /**
@@ -607,6 +611,13 @@ module PenHolder(height=pen_holder_height, ring_id=pen_holder_id, ring_od=pen_ho
         }
     }
 }
+
+translate([0, -offset, 0])
+rotate([0, 0, -15])
+    DuctAssembly(45);
+
+translate([0, 0, -42.6])
+    %cylinder(r=100, h=0.2);
 
 // Indicator for when using a V6 hotend and the moulded clamp fixed on top of
 // the effector with the loose clamp
