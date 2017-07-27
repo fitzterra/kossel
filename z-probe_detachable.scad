@@ -4,13 +4,15 @@ $fn=64;
 
 use <effector_e3d.scad>
 
-print = false;       // Draw for printing
+effector_ver = 5;   // Effector version 5 or 6
+print = true;       // Draw for printing
 probeTop = true;
-probeBot = true;
-probeCradle = true;
-probeCradMount = true;
+probeBot = false;
+probeCradle = false;
+probeCradMount = false;
 assembly = true;    // Show assembly to effector
 
+offs = 18;
 
 /**
  * A microswitch activated probe that sits in a cradle attached to the frame
@@ -42,6 +44,7 @@ module ZProbe(top=true, bottom=true, cradle=true, bracket=true, print=true, asse
     magR = 1.1;     // Mag thickness - 0.1 for additional tollerence
     magTol = 0.2;   // Magnet diameter tollerence
     magC2C = 20;    // Center to center for the magnets
+    colW = w-magC2C;    // Width of the U columns
 
     topH = 3;       // Height for the top mount
     topMountDia = 3;// Dimeter for the top mount hole
@@ -76,26 +79,31 @@ module ZProbe(top=true, bottom=true, cradle=true, bracket=true, print=true, asse
     module Top() {
         difference() {
             // The base block
-            cube([w, d, topH]);
+            cube([w, d, topH+offs]);
+            // Cut out if we have an offset
+            if(offs>0)
+                translate([colW, -0.1, 1])
+                    cube([w-colW*2, d+0.2, offs-1]);
             // Mount hole
-            translate([w/2, d/2, -1])
-                cylinder(d=topMountDia, h = topH+2);
+            translate([w/2, d/2, -0.1])
+                cylinder(d=topMountDia, h=offs+topH+0.2);
             // Magnet recesses
-            for(x=[(w-magC2C)/2, w-(w-magC2C)/2])
-                translate([x, d/2, topH-magR]) {
-                    cylinder(d=magDia+2*magTol, h=magR+1);
+            for(x=[colW/2, w-colW/2])
+                translate([x, d/2, offs+topH-magR]) {
+                    cylinder(d=magDia+2*magTol, h=magR+0.1);
                     translate([0, 0, -2])
                         cylinder(d1=2, d2=magDia/1.5, h=2.1);
-                    translate([0, -d/4-0.2, magR-topH/2])
-                        cube([2, d/2, topH+2], center=true);
+                    translate([0, -d/4-0.2, -offs/2+magR-topH/2]) {
+                        cube([2, d/2, offs+topH+0.2], center=true);
+                        if(offs>0)
+                            translate([0, d/4+0.2, 0])
+                            cylinder(d=2, h=offs+topH+0.2, center=true);
+                    }
                 }
-
         }
     }
 
     module Bottom() {
-        colW = w-magC2C;    // Width of the U columns
-
         difference() {
             // The master stock to work from
             cube([w, d, botH]);
@@ -195,7 +203,7 @@ module ZProbe(top=true, bottom=true, cradle=true, bracket=true, print=true, asse
             translate([-w/2, d/2, 0])
             rotate([180, 0, 0])
             Top();
-        translate([0, 0, -topH-0.2-botH]) {
+        translate([0, 0, -topH-0.2-botH-offs]) {
             if(bottom)
                 translate([-w/2, -d/2, 0])
                 Bottom();
@@ -241,12 +249,25 @@ if (print) {
 } else if (assembly) {
     translate([0, 0, 5])
         rotate([0, 0, 0])
-            EffectorE3D();
+            EffectorE3D(ver=effector_ver);
 
     translate([0, -23, 0])
         rotate([0, 0, 180])
-            ZProbe(print=false, assemble=true);
+            ZProbe(top=probeTop, bottom=probeBot, cradle=probeCradle,
+                       bracket=probeCradMount, print=false, assemble=true);
 } else {
     ZProbe(top=probeTop, bottom=probeBot, cradle=probeCradle,
                bracket=probeCradMount, print=false, assemble=false);
 }
+use <e3d_v6_all_metall_hotend.scad>
+*translate([0, 0, 10]) {
+    E3DV6Holder();
+    translate([0, 0, 8])
+        rotate([0, 0, 90])
+        color("silver")
+            e3d_knockoff();
+}
+
+
+*translate([-30, -30, -44])
+    %cube([60, 60, 1]);

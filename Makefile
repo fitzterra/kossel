@@ -41,8 +41,10 @@ $(STLDIR)/%.stl: %.scad
 # This is for the full effector and hotend STL to use in full printer model
 $(STLDIR)/effector_e3d_v5.stl: effector_e3d.scad
 	openscad -m make -o $@ -D hotend=5 -D print=false -D 'renderParts=["effector","posts","groove_mount","mount_cap","hotend"]' $<
-$(STLDIR)/effector_e3d_v6.stl: effector_e3d.scad
-	openscad -m make -o $@ -D hotend=6 -D print=false -D 'renderParts=["all"]' $<
+$(STLDIR)/effector_e3d_v6a.stl: effector_e3d.scad
+	openscad -m make -o $@ -D hotend=6 -D 'hotendv6mount="holder"' -D print=false -D 'renderParts=["all"]' $<
+$(STLDIR)/effector_e3d_v6b.stl: effector_e3d.scad
+	openscad -m make -o $@ -D hotend=6 -D 'hotendv6mount="clamp"' -D print=false -D 'renderParts=["all"]' $<
 
 # This is for building a plate from all the parts in effector_e3d.scad
 $(STLDIR)/effector_e3d_v5_plate.stl: effector_e3d.scad

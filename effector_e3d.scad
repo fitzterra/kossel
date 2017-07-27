@@ -11,18 +11,20 @@ use <e3d_v6_all_metall_hotend.scad>;
 // This defines the hotend to use, see the comments in renderParts for parts
 // that are affected.
 hotend = 6;     // Either 5 for the E3Dv5 or 6 for the E3Dv6 hotend.
+hotendv6mount = "clamp";    // For the split clamp moulded to the effector
+//hotendv6mount = "holder";   // For v6 split holder mounted onto effector mount tabs
+
 renderParts = [
-    "all",          // This is more usefull with print==true
-    "effector",   // The effector specific for the hotend version
-    "hotend",
-    //--- These will only be rendered for a v5 hotend
+    //"all",          // This is more usefull with print==true
+    "effector",
+    "hotend",       // Depends on hotend variable above
+    "v6Clamp",   // Only rendered if hotend==6 and hotendv6mount=="clamp"
+    "v6_holder", // Only rendered if hotend==6 and hotendv6mount=="holder"
+    // -- Only when hotend is v5
     //"posts",
     //"groove_mount",
     //"mount_cap",
-    //"hotendv5",
     //"pen_holder",
-    //--- These will only be rendered for a v6 hotend
-    //"v6Clamp",
 ];
 // Set true to make a plate of the selected parts above for printing
 print = false;
@@ -34,6 +36,8 @@ print = false;
 // holes for the rod ends are extra tight.
 // NOTE! : This option uses the newly define m3_tap_radius in configuration.scad
 tapM3s = true;
+m3_bolt_head_d = 5.4;   // Head diameter of m3 cap head bolt
+m3_bolt_head_h = 3.5;   // Head height of m3 cap head bolt
 
 separation = 40;  // Distance between ball joint mounting faces.
 offset = 23;  // Same as DELTA_EFFECTOR_OFFSET in Marlin.
@@ -73,8 +77,8 @@ bowden_fitting_dia = 10 + tol;  // For the hole in the top to attach the fitting
 e3d_top_flange_dia = 16 + tol;  // The top flange on the hotend sunk into the cap
 e3d_top_flange_height = 4 + 0.5;// Top flange height + some to sink into cap
 mount_cap_height = 6;           // Height of end cap
-m3_cap_dia = 5.4 + tol;         // Diameter of the hex cap M3 screw for sinking
-m3_cap_height = 3.5 + 1.3;      // Cap height plus a little extra for sinking
+m3_cap_dia = m3_bolt_head_d + tol; // Diameter of the hex cap M3 screw for sinking
+m3_cap_height = m3_bolt_head_h + 1.3;  // Cap height plus a little extra for sinking
 
 // Pen holder params
 pen_holder_height = height-4;
@@ -83,6 +87,16 @@ pen_holder_od = pen_holder_id + 8;  // Outer Diameter for pen hole
 
 // E3d V6 parameters
 v6ClampHeight = 12; // Height above effector for hot end top for v6
+v6ZProbeMount = true; // True to add a mount block between the the rod cones
+                      // at 180° to mount the detachable ZProbe top plate
+
+// E3D V6 Holder that fits onto the standard V5 effector parameters
+v6holder_rMajor = offset-4; // Radius for bottom side
+v6holder_rMinor = offset-8; // Radius for top side
+v6holder_height = 8;
+v6holder_z_offs = v6holder_height; // Height offset for hotend top from bottom of holder.
+v6holder_bolt_offs = 10;  // Offset for clamp bolts from center in horizontal plane
+v6holder_tab_h = 5;     // Height of the tabs for mounting to the effector.
 
 
 /**
@@ -146,7 +160,7 @@ module v6Clamp(left=true) {
     boltLen = 25;
     boltInset = 3;
     boltHeadHeight = 3;
-    boltHeadDia = 5.5 + 0.5;    // 0.5 is for fit tollerance
+    boltHeadDia = m3_bolt_head_d + 0.6;    // 0.6 is for fit tollerance
     nutHeight = 6;
 
     difference() {
@@ -171,7 +185,7 @@ module v6Clamp(left=true) {
 /**
  * Module that generates the effector base
  **/
-module EffectorE3D(ver=6) {
+module EffectorE3D(v6clamp=false) {
     difference() {
         // Main effector including rod mount blocks and endcap mount blocks if not V6
         union() {
@@ -181,7 +195,7 @@ module EffectorE3D(ver=6) {
             for (a = [60:120:359])
                 rotate([0, 0, a]) {
                     // Mount block posts to upper hotend end cap for non v6
-                    if(ver!=6)
+                    if(!v6clamp || (a==180 && v6clamp && v6ZProbeMount))
                         rotate([0, 0, 90])
                             translate([offset-2, 0, 0])
                                 cube([12, 7, height], center=true);
@@ -219,8 +233,8 @@ module EffectorE3D(ver=6) {
                 }
         }
         // Mounting holes for posts to upper hotend end cap if not V6
-        if(ver!=6)
-            for (a = [0:120:359])
+        if(!v6clamp || (v6clamp && v6ZProbeMount))
+            for (a = !v6clamp ? [0:120:359] : [120])
                 rotate([0, 0, a+60]) {
                     // Bolt hole
                     translate([0, mount_radius, 0])
@@ -236,7 +250,7 @@ module EffectorE3D(ver=6) {
             }
 
         // Hole for hotend if not v6
-        if(ver!=6)
+        if(!v6clamp)
             translate([0, 0, -height/2-0.1])
                 cylinder(r1=hotend_radius+1, r2=hotend_radius, h=height+1, $fn=120);
         else {
@@ -244,7 +258,7 @@ module EffectorE3D(ver=6) {
             v6Cutter();
         }
     }
-    if(ver==6)
+    if(v6clamp)
             translate([0, 0, height/2])
         v6Clamp();
 }
@@ -485,6 +499,73 @@ module MountCap() {
     }
 }
 
+/*
+ * This is another option for fitting an E3D v6 hotend, and is based on the
+ * PenHolder. This will allow the V6 hotend to be clamped in a holder that fits
+ * on top of the V5 effector and bolts on to the tabs between the rod holders
+ * on the effector used for the V5 pillars.
+ *
+ * This mount should work almost better than the built in v6 mount option for
+ * modifying the effector for a v6 fit.
+ **/
+module E3DV6Holder() {
+    boltHeadDia = m3_bolt_head_d + 0.6;    // 0.6 is for fit tollerance
+    
+    // Width of the mounting tabs. This is hardcoded in EffectorE3D.
+    tab_width = 7;
+    // There is an additional 4mm from the center of the mount screw to end of
+    // the mount tab on the effector.
+    tab_len = mount_radius + 4;
+    tab_height = 5;
+
+    // Main hotend clamp
+    difference() {
+        // Clamp and mount tabs
+        union() {
+            // Base clamp
+            cylinder(r=v6holder_rMajor, r2=v6holder_rMinor, h=v6holder_height, $fn=120);
+            // Mounting tabs
+            for(a=[0:120:359])
+                rotate([0, 0, a])
+                    translate([-tab_width/2, -tab_len, 0])
+                        difference() {
+                            // Tab
+                            cube([tab_width, tab_len, v6holder_tab_h]);
+                            // Mount hole
+                            translate([tab_width/2, tab_len-mount_radius, -0.1])
+                                cylinder(r=m3_radius, h=v6holder_tab_h+0.2, $fn=120);
+                        }
+        }
+        // Cutout for hotend. NOTE: The v6Cutter positions the cutter at
+        // v6ClampHeight which we need to neutralize here first before applying
+        // v6holder_z_offs. The cutter should really not position to
+        // v6ClampHeight anymore, but this first needs fixing everywhere
+        // v6Cutter is used. 
+        translate([0, 0, -v6ClampHeight+v6holder_z_offs])
+            v6Cutter(false);
+        // Bolt holes
+        for(x=[-v6holder_bolt_offs, v6holder_bolt_offs])
+            translate([x, 0, v6holder_height/2]) {
+                // Shaft hole
+                rotate([90, 0, 0])
+                    cylinder(r=tapM3s?m3_tap_radius:m3_wide_radius,
+                             h=v6holder_rMajor*2, center=true, $fn=92);
+                // Head hole
+                translate([0, -v6holder_rMajor, 0])
+                    rotate([-90, 0, 0])
+                        cylinder(d=boltHeadDia, h=v6holder_rMajor*5/8, $fn=92);
+                // Nut recess if not tapping M3 holes
+                if(!tapM3s)
+                translate([0, v6holder_rMajor, 0])
+                    rotate([90, 0, 0])
+                        cylinder(r=m3_nut_radius+0.3, h=v6holder_rMajor*4/8, $fn=6);
+            }
+        // Slice it down the middel, leaving a 1mm gap
+        translate([0, 0, v6holder_height/2])
+            cube([v6holder_rMajor*2.1, 1, v6holder_height+2], center=true);
+    }
+}
+
 /**
  * Module for a pen holder that fits on top of the effector.
  *
@@ -527,23 +608,30 @@ module PenHolder(height=pen_holder_height, ring_id=pen_holder_id, ring_od=pen_ho
     }
 }
 
+// Indicator for when using a V6 hotend and the moulded clamp fixed on top of
+// the effector with the loose clamp
+v6Moulded = hotend==6 && hotendv6mount=="clamp";
 for (p=renderParts) {
     if(p=="effector" || p=="all")
         // Effector is always center whether printing or not
         translate([0, 0, height/2])
-            EffectorE3D(ver=hotend);
+            EffectorE3D(v6Moulded);
     // Show the hotend only if not printing
     if(print==false && (p=="hotend" || p=="all"))
-        translate([0, 0, hotend==5?-1:v6ClampHeight+height])
+        translate([0, 0, hotend==5?-1:height+0.2+(hotendv6mount=="clamp"?v6ClampHeight:v6holder_z_offs)])
             if(hotend==5)
                 E3DHotEnd();
             else
-                e3d_knockoff();
-    if(hotend==6) {
-        if(p=="v6Clamp" || p=="all")
-            translate([(p=="all"&&print)?offset*1.5:0, 0, (!print&&p=="all")?height:0])
+                color("silver")
+                rotate([0, 0, 240])
+                    e3d_knockoff();
+    if(v6Moulded && (p=="v6Clamp" || p=="all"))
+        translate([print?offset*1.5:0, 0, !print?height:0])
                 v6Clamp(false);
-    } else {
+    if(!v6Moulded && hotend==6 && (p=="v6_holder" || p=="all"))
+        translate([print?offset*2.5:0, 0, !print?height:0])
+            E3DV6Holder();
+    if(hotend==5) {
         if(p=="posts" || p=="all")
             translate([0, print?post_height+mount_radius*3/2:0, print?0:height])
                 rotate([0, 0, 180])
@@ -578,5 +666,4 @@ for (p=renderParts) {
     }
 }
 echo("M3 bolts for mount posts when tapping into effector:", mount_cap_height-m3_cap_height+post_height+height*2/3);
-
 
