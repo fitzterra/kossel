@@ -3,95 +3,136 @@
 //   * A complete reorganization and quite a bit of rewritten code.
 //   * Also combined all parts into one file with rendering and printing config
 //     options.
+
+/* [Hidden] */
+
 include <configuration.scad>;
 use <e3d-type-hotend.scad>;
 use <e3d_v6_all_metall_hotend.scad>;
 use <fan_duct.scad>;
 
-// Print and render options. Comment/uncomment those parts to be rendered or printed.
-// This defines the hotend to use, see the comments in renderParts for parts
-// that are affected.
-hotend = 6;     // Either 5 for the E3Dv5 or 6 for the E3Dv6 hotend.
-//hotendv6mount = "clamp";    // For the split clamp moulded to the effector
-hotendv6mount = "holder";   // For v6 split holder mounted onto effector mount tabs
 
-renderParts = [
-    //"all",          // This is more usefull with print==true
-    "effector",   
-    "hotend",       // Depends on hotend variable above
-    "v6Clamp",   // Only rendered if hotend==6 and hotendv6mount=="clamp"
-    "v6_holder", // Only rendered if hotend==6 and hotendv6mount=="holder"
-    // -- Only when hotend is v5
-    //"posts",
-    //"groove_mount",
-    //"mount_cap",
-    //"pen_holder",
-];
-// Set true to make a plate of the selected parts above for printing
-print = false;
+/* [Output options] */
+// Select output option, then hotend, then parts.
+output = "design"; // [design, assemble, print]
+// What tool will the effector carry?
+tool = "hotend"; // [hotend, pen, laser]
+// Select the E3D version hotend. These are both clones and not originals!
+hotend = 6; // [5, 6]
 
+/* [Hotend V5 Parts] */
+// Effector for V5
+partV5Effector = true;
+// Hotend for V5 - only useful in assembly output
+partV5Hotend = true;
+// The mounting posts for V5
+partV5Posts = true;
+// The hotend groove mount for V5
+partV5GrooveMount = true;
+// The mounting cap for V5
+partV5MountCap = true;
 
+/* [Hotend V6 Parts] */
+// Effector for V6
+partV6Effector = true;
+// Hotend for V6 - only useful in assembly output
+partV6Hotend = true;
+// Mounting method for V6 hotend. Clamp is molded to effector, holder is seperate.
+hotendv6mount = "holder"; // ["holder", "clamp"]
+// Whether to render the above selected mount
+partV6Mount = true;
+// The parts cooling fan duct - only useful in assembly
+partV6FanDuct = true;
+
+/* [Pen Holder Parts] */
+// Effector for the pen holder?
+partPenEffector = true;
+// The pen holder itself?
+partPenHolder = true;
+
+/* [Effector Options] */
 // Set to true to make M3 holes that needs tapping directly into the plastic
 // instead of using nuts. On my printer, the hex holes for M3 nuts dont always
 // come out to well and the clearence on this effector to get the nuts in the
 // holes for the rod ends are extra tight.
 // NOTE! : This option uses the newly define m3_tap_radius in configuration.scad
+// Should M3 holes be tapped or a recess added for a nut?
 tapM3s = true;
-m3_bolt_head_d = 5.4;   // Head diameter of m3 cap head bolt
-m3_bolt_head_h = 3.5;   // Head height of m3 cap head bolt
+// Head diameter for and M3 cap head bolt
+m3_bolt_head_d = 5.4;
+// Head height for an M3 cap head bolt
+m3_bolt_head_h = 3.5;
 
-separation = 40;  // Distance between ball joint mounting faces.
-offset = 23;  // Same as DELTA_EFFECTOR_OFFSET in Marlin.
-mount_radius = 23;  // Position of mount posts from center
-height = 10;        // Height of the effector
+// Distance between ball joint mounting faces.
+separation = 40;
+// Same as DELTA_EFFECTOR_OFFSET in Marlin.
+offset = 23;
+// Position of mount posts from center
+mount_radius = 23;
+// Height of the effector
+height = 10;
 
-hotend_radius = 14;  // Hole for the hotend (J-Head diameter is 16mm).
-cone_r1 = 2.5;      // Cone radii for effector ball joint connection points
+// Hole for the hotend (J-Head diameter is 16mm).
+hotend_radius = 14;
+// Cone radius for effector ball joint connection points - small end
+cone_r1 = 2.5;
+// Cone radius for effector ball joint connection points - big end
 cone_r2 = 14;
 
 // Mount posts and Fan parameters
+/* [V5 Post/Fan Mount Options] */
+// Posts height
 post_height=36;
-post_rad = 4;   // Radius for round part of mount post - also half the square side width
-fan_size = 30; // Fan width/height size. This effector is best with a 30x30 fan
-fan_corner_rad = 2.25;  // Radius fan corners
-fan_mount_hole_d = 24;   // Distance between mounting holes of the fan
-fan_depth = 10;       // Thickness of fan
-fan_blade_dia = fan_size-2; //Diameter of the hole for the blades 
-fan_offs = 1.0; // The amount of clearance from the edge of the hotend hole to
-                // the inside of the fan edge which will still allow the fan to
-                // not interfere with the rod ends. 
+// Radius for round part of mount post - also half the square side width
+post_rad = 4;
+// Fan width/height size. This effector is best with a 30x30 fan
+fan_size = 30;
+// Radius fan corners
+fan_corner_rad = 2.25;
+// Distance between mounting holes of the fan
+fan_mount_hole_d = 24;
+// Thickness of fan
+fan_depth = 10;
+//Diameter of the hole for the blades 
+fan_blade_dia = fan_size-2;
+// The amount of clearance from the edge of the hotend hole to
+// the inside of the fan edge which will still allow the fan to
+// not interfere with the rod ends. 
+// Fan offset from hotend hole to inside of fan edge.
+fan_offs = 1.0;
 
-// Goove mount parameters
+/* [V5 Groove Mount Options] */
+// Radius
 groove_mount_radius = 18;
+// Height
 groove_mount_height = 6;
 // Radius around center where mounting holes are located
 groove_mount_hole_radius = 12.5;
 // Slot and lip for installation
 groove_mount_slot_radius = 6.25;
+// Lip radius
 groove_mount_lip_radius = 8.1;
+// Lip depth
 groove_mount_lip_depth = 1;
 
-// Mount Cap parameters
-tol = 0.6;  // Additional tollerance to add to cylinder diameters for tight printing
+/* [V5 Mount Cap Options] */
+// Additional tollerance to add to cylinder diameters for tight printing
+tol = 0.6;
 mount_cap_dia = (offset*2)-5;   // Slightly smaller than the effector
 bowden_fitting_dia = 10 + tol;  // For the hole in the top to attach the fitting
 e3d_top_flange_dia = 16 + tol;  // The top flange on the hotend sunk into the cap
 e3d_top_flange_height = 4 + 0.5;// Top flange height + some to sink into cap
-mount_cap_height = 6;           // Height of end cap
+// Height of end cap
+mount_cap_height = 6;
 m3_cap_dia = m3_bolt_head_d + tol; // Diameter of the hex cap M3 screw for sinking
 m3_cap_height = m3_bolt_head_h + 1.3;  // Cap height plus a little extra for sinking
 
-// Pen holder params
-pen_holder_height = height-4;
-pen_holder_id = 9.3;                // Inner Diameter for pen hole
-pen_holder_od = pen_holder_id + 8;  // Outer Diameter for pen hole
-
-// E3d V6 parameters
+/* [V6 Clamp Options] */
 v6ClampHeight = 12; // Height above effector for hot end top for v6
 v6ZProbeMount = true; // True to add a mount block between the the rod cones
                       // at 180° to mount the detachable ZProbe top plate
 
-// E3D V6 Holder that fits onto the standard V5 effector parameters
+/* [V6 Holder Options] */
 v6holder_rMajor = offset-4; // Radius for bottom side
 v6holder_rMinor = offset-8; // Radius for top side
 v6holder_height = 8;
@@ -99,7 +140,20 @@ v6holder_z_offs = v6holder_height; // Height offset for hotend top from bottom o
 v6holder_bolt_offs = 10;  // Offset for clamp bolts from center in horizontal plane
 v6holder_tab_h = 5;     // Height of the tabs for mounting to the effector.
 
-/* [Duct Mount]*/
+/*[Pen Holder Options] */
+pen_holder_height = height-4;
+pen_holder_id = 9.3;                // Inner Diameter for pen hole
+pen_holder_od = pen_holder_id + 8;  // Outer Diameter for pen hole
+
+/* [Parts Fan Duct Options] */
+// Horizontal angle for duct
+ductHAngle = -15; // [-30:30]
+// Vertical angle for duct
+ductVAngle = 45; // [0:60]
+// Add a bed simulator to see if the duct will scrape on the bed
+ductSimBed = true;
+// The vertical position for the simulated bed
+ductBedZPos = -42.6;
 
 
 
@@ -612,69 +666,112 @@ module PenHolder(height=pen_holder_height, ring_id=pen_holder_id, ring_od=pen_ho
     }
 }
 
-translate([0, -offset, 0])
-rotate([0, 0, -15])
-    DuctAssembly(45);
-
-translate([0, 0, -42.6])
-    %cylinder(r=100, h=0.2);
-
-// Indicator for when using a V6 hotend and the moulded clamp fixed on top of
-// the effector with the loose clamp
-v6Moulded = hotend==6 && hotendv6mount=="clamp";
-for (p=renderParts) {
-    if(p=="effector" || p=="all")
-        // Effector is always center whether printing or not
-        translate([0, 0, height/2])
-            EffectorE3D(v6Moulded);
-    // Show the hotend only if not printing
-    if(print==false && (p=="hotend" || p=="all"))
-        translate([0, 0, hotend==5?-1:height+0.2+(hotendv6mount=="clamp"?v6ClampHeight:v6holder_z_offs)])
-            if(hotend==5)
-                E3DHotEnd();
-            else
-                color("silver")
-                rotate([0, 0, 240])
-                    e3d_knockoff();
-    if(v6Moulded && (p=="v6Clamp" || p=="all"))
-        translate([print?offset*1.5:0, 0, !print?height:0])
-                v6Clamp(false);
-    if(!v6Moulded && hotend==6 && (p=="v6_holder" || p=="all"))
-        translate([print?offset*2.5:0, 0, !print?height:0])
-            E3DV6Holder();
-    if(hotend==5) {
-        if(p=="posts" || p=="all")
-            translate([0, print?post_height+mount_radius*3/2:0, print?0:height])
-                rotate([0, 0, 180])
-                    // Printing is handled by the assembly module
-                    MountPostsAssembly(print=print);
-        if(p=="groove_mount" || p=="all")
-            if(print==false)
+/**
+ * Generates an assembly from the selected parts
+ **/
+module Assembly() {
+    // What tool are we assembling?
+    if(tool=="hotend") {
+        // Indicator for when using a V6 hotend and the moulded clamp fixed on
+        // top of the effector with the loose clamp
+        v6Moulded = hotend==6 && hotendv6mount=="clamp";
+        // Effector
+        if((hotend==5 && partV5Effector) || (hotend==6 && partV6Effector))
+            translate([0, 0, height/2])
+                EffectorE3D(v6Moulded);
+        // Hotend
+        if((hotend==5 && partV5Hotend) || (hotend==6 && partV6Hotend))
+            translate([0, 0, hotend==5?-1:height+0.2+(hotendv6mount=="clamp"?v6ClampHeight:v6holder_z_offs)])
+                if(hotend==5)
+                    E3DHotEnd();
+                else
+                    color("silver")
+                    rotate([0, 0, 240])
+                        e3d_knockoff();
+        // The V5 options
+        if(hotend == 5) {
+            if(partV5Posts)
+                translate([0, 0, height])
+                    rotate([0, 0, 180])
+                        // Printing is handled by the assembly module
+                        MountPostsAssembly(print=output=="print");
+            if(partV5GrooveMount)
                 translate([0, 0, height+post_height-groove_mount_height])
                     GrooveMount(tapM3s);
-            else {
+            if(partV5MountCap)
+                translate([0, 0, height+post_height+mount_cap_height])
+                    rotate([180, 0, 0])
+                        MountCap();
+        } else {
+            // V6 options
+            // V6 mount
+            if(partV6Mount)
+                translate([0, 0, height])
+                    if(hotendv6mount=="clamp")
+                        v6Clamp(false);
+                    else
+                        E3DV6Holder();
+            if(partV6FanDuct) {
+                translate([0, -offset, 0])
+                    rotate([0, 0, ductHAngle])
+                        DuctAssembly(ductVAngle);
+                if (ductSimBed)
+                    translate([0, 0, ductBedZPos])
+                        %cylinder(r=100, h=0.2);
+                }
+        }
+    } else if(tool=="pen") {
+        if(partPenEffector)
+            translate([0, 0, height/2])
+                EffectorE3D();
+        if(partPenHolder)
+            translate([0, 0, height+pen_holder_height/2])
+                PenHolder();
+    } else if(tool=="laser")
+        echo("not supported yet");
+}
+
+module Print() {
+        // Indicator for when using a V6 hotend and the moulded clamp fixed on
+        // top of the effector with the loose clamp
+        v6Moulded = hotend==6 && hotendv6mount=="clamp";
+        // Effector
+        if((hotend==5 && partV5Effector) || (hotend==6 && partV6Effector))
+            translate([0, 0, height/2])
+                EffectorE3D(v6Moulded);
+        // The V5 options
+        if(hotend == 5) {
+            if(partV5Posts)
+                translate([0, post_height+mount_radius*3/2, 0])
+                    rotate([0, 0, 180])
+                        // Printing is handled by the assembly module
+                        MountPostsAssembly(print=output=="print");
+            if(partV5GrooveMount)
                 translate([-mount_radius-groove_mount_radius*2+5, 0, 0])
                     GrooveMount(tapM3s);
-            }
-        if(p=="mount_cap" || p=="all")
-            if(print==false)
-            translate([0, 0, height+post_height+mount_cap_height])
-                rotate([180, 0, 0])
-                    MountCap();
-            else {
-                translate([])
+            if(partV5MountCap)
                 translate([mount_radius+mount_cap_dia, 0, 0])
-                    MountCap();
-            }
-        if(p=="pen_holder" || p=="all")
-            if(print==false)
-                translate([0, 0, height+pen_holder_height/2+1])
-                    PenHolder();
-            else {
-                translate([0, -mount_radius*2, pen_holder_height/2])
-                    PenHolder();
-            }
-    }
+                    rotate([180, 0, 0])
+                        MountCap();
+        } else {
+            // V6 options
+            // V6 mount
+            if(partV6Mount)
+                if(hotendv6mount=="clamp")
+                    translate([offset*1.5, 0, 0])
+                        v6Clamp(false);
+                else
+                    translate([offset*2.5, 0, 0])
+                        E3DV6Holder();
+        }
 }
+
+if(output == "design")
+    echo("Gonna design");
+else if(output == "assemble")
+    Assembly();
+else if(output=="print")
+    Print();
+
 echo("M3 bolts for mount posts when tapping into effector:", mount_cap_height-m3_cap_height+post_height+height*2/3);
 
