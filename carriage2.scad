@@ -80,7 +80,14 @@ module carriage(sample_belts=false) {
             for(y=[19, -11]) {
                 translate([2.20, y, horn_thickness/2+1]) {
                     difference() {
-                        cube([7, 10, horn_thickness-2], center=true);
+                        // Want to make the flat clamp side slightly thicker
+                        // (it keeps breaking there from stress on the belt)
+                        // (1mm), but the stock block is centered to line up
+                        // with the teardrop loop, so we need to offset on the
+                        // X axis by half the added thickness to compensate for
+                        // the centering below.
+                        translate([-0.5, 0, 0])
+                            cube([8, 10, horn_thickness-2], center=true);
                         translate([-1.5,-5,-1.5]) {
                             cube([belt_thickness,10,10]);
                             for (mult = [0:5]) {
@@ -94,7 +101,7 @@ module carriage(sample_belts=false) {
                                 cube([1.5, 3, horn_thickness]);
                     }
                     // Support for belt clips
-                    translate([-6.5, -5, -1.5]) 
+                    translate([-7.5, -5, -1.5]) 
                         difference() {
                             cube([3, 10, 3]);
                             translate([0, -0.1, 3])
